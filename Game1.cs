@@ -9,6 +9,7 @@ namespace christmas
 {
     public class Particle
     {
+        public Color color { get; private set; }
         public Vector2 position { get; set; }
         public Vector2 startingPos { get; private set; }
         public float elapsed { get; set; }
@@ -17,15 +18,16 @@ namespace christmas
         {
             this.elapsed = elapsed;
             this.startingPos = position;
+            color = new Color(Game1.random.Next(0, 256), Game1.random.Next(0, 256), Game1.random.Next(0, 256));
         }
     }
     public class Game1 : Game
     {
+        public static Random random;
         private GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
 
         private Texture2D point;
-        private Vector2 position;
 
         private Matrix scaleMatrix;
         private const float scale = 10f;
@@ -36,9 +38,10 @@ namespace christmas
         private Vector2 centerOfRotation = new Vector2(25, 25);
 
         private List<Particle> christmasLights = new List<Particle>();
-        private int numberOfParticles = 15;
+        private int numberOfParticles = 250;
         public Game1()
         {
+            random = new Random();
             _graphics = new GraphicsDeviceManager(this);
             Content.RootDirectory = "Content";
             IsMouseVisible = true;
@@ -55,7 +58,7 @@ namespace christmas
 
             for (int i = 0; i < numberOfParticles; i++)
             {
-                christmasLights.Add(new Particle())
+                christmasLights.Add(new Particle(centerOfRotation, i / 5f));
             }
             base.Initialize();
         }
@@ -66,18 +69,16 @@ namespace christmas
 
             // TODO: use this.Content to load your game content here
         }
-        private float elapsed = 0f;
         protected override void Update(GameTime gameTime)
         {
-            elapsed += (float)gameTime.ElapsedGameTime.TotalSeconds*5;
+            foreach (var item in christmasLights)
+            {
+                item.elapsed += (float)gameTime.ElapsedGameTime.TotalSeconds;
 
-            /*position=new Vector2(25 + elapsed, 25+(10* MathF.Sin(elapsed)));*/
-
-            position = new Vector2(25  + ((radius+ (amplitude * MathF.Sin(elapsed))) *(float)Math.Cos(MathHelper.ToRadians(angularSpeed*elapsed))), 
-                                   25  + ((radius + (amplitude * MathF.Sin(elapsed))) * (float)Math.Sin(MathHelper.ToRadians(angularSpeed * elapsed)))
-            );
-
-            // TODO: Add your update logic here
+                item.position = new Vector2(item.startingPos.X + ((radius + (amplitude * MathF.Sin(item.elapsed))) * (float)Math.Cos(MathHelper.ToRadians(angularSpeed * item.elapsed))),
+                                       item.startingPos.Y + ((radius + (amplitude * MathF.Sin(item.elapsed))) * (float)Math.Sin(MathHelper.ToRadians(angularSpeed * item.elapsed)))
+                );
+            }
 
             base.Update(gameTime);
         }
@@ -87,7 +88,10 @@ namespace christmas
             GraphicsDevice.Clear(Color.CornflowerBlue);
 
             _spriteBatch.Begin(transformMatrix:scaleMatrix,samplerState:SamplerState.PointClamp);
-            _spriteBatch.Draw(point, position, Color.Red);
+            foreach (var item in christmasLights)
+            {
+                _spriteBatch.Draw(point, item.position, item.color);
+            }
             _spriteBatch.End();
 
             base.Draw(gameTime);
